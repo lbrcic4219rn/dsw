@@ -12,6 +12,9 @@ import { NgbModule } from '@ng-bootstrap/ng-bootstrap';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import {HTTP_INTERCEPTORS, HttpClientModule} from "@angular/common/http";
 import {TokenInterceptor} from "./interceptors/token.interceptor";
+import { MachinesComponent } from './components/machines/machines.component';
+import { CreateMachineComponent } from './components/create-machine/create-machine.component';
+import { LogsComponent } from './components/logs/logs.component';
 
 @NgModule({
   declarations: [
@@ -20,7 +23,10 @@ import {TokenInterceptor} from "./interceptors/token.interceptor";
     EditUserComponent,
     HomeComponent,
     NavbarComponent,
-    LoginComponent
+    LoginComponent,
+    MachinesComponent,
+    CreateMachineComponent,
+    LogsComponent
   ],
   imports: [
     BrowserModule,

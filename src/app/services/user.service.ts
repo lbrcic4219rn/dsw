@@ -26,10 +26,6 @@ export class UserService {
     this._jwtToken = token;
   }
 
-  toggleLogin() {
-    this._loggedIn = !this._loggedIn;
-  }
-
   setPermissions(token: string) {
     const perms = JSON.parse(atob(token.split('.')[1])).permissions;
     this._permissions = perms;
@@ -42,7 +38,13 @@ export class UserService {
       this.permissions.canReadUser == 0 &&
       this.permissions.canDeleteUser == 0 &&
       this.permissions.canUpdateUser == 0 &&
-      this.permissions.canCreateUser == 0
+      this.permissions.canCreateUser == 0 &&
+      this.permissions.canSearchMachine == 0 &&
+      this.permissions.canStartMachine == 0 &&
+      this.permissions.canStopMachine == 0 &&
+      this.permissions.canRestartMachine == 0 &&
+      this.permissions.canCreateMachine == 0 &&
+      this.permissions.canDestroyMachine == 0
     ) {
       alert('User has no permissions, logging out');
       this.logout();
@@ -59,15 +61,9 @@ export class UserService {
     return false;
   }
 
-  isLoggedIn(): boolean {
-    if (this._loggedIn == true) return true
-    return this.checkJWTToken();
-  }
-
   logout() {
     this._loggedIn = false;
     localStorage.removeItem('jwt_token');
     this.router.navigate(['/login']);
   }
-
 }
