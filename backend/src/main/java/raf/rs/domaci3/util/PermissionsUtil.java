@@ -1,6 +1,6 @@
 package raf.rs.domaci3.util;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import raf.rs.domaci3.model.enums.PermissionEnum;
@@ -10,14 +10,10 @@ import raf.rs.domaci3.services.UserService;
 import java.util.Optional;
 
 @Component
+@RequiredArgsConstructor
 public class PermissionsUtil {
 
-    private UserService userService;
-
-    @Autowired
-    public PermissionsUtil (UserService userService) {
-        this.userService = userService;
-    }
+    private final UserService userService;
 
     public boolean checkPermission (PermissionEnum permissionEnum) {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();

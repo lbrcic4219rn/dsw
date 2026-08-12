@@ -1,6 +1,6 @@
 package raf.rs.domaci3.bootstrap;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
@@ -15,18 +15,12 @@ import java.util.Date;
 import java.util.Random;
 
 @Component
+@RequiredArgsConstructor
 public class BootstrapData implements CommandLineRunner {
     private final UserRepo userRepo;
     private final MachineRepo machineRepo;
     private final PasswordEncoder passwordEncoder;
     private final Random random = new Random();
-
-    @Autowired
-    public BootstrapData(UserRepo userRepo, PasswordEncoder passwordEncoder, MachineRepo machineRepo) {
-        this.userRepo = userRepo;
-        this.passwordEncoder = passwordEncoder;
-        this.machineRepo = machineRepo;
-    }
 
     @Override
     public void run(String... args) throws Exception {

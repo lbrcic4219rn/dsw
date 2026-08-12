@@ -1,6 +1,6 @@
 package raf.rs.domaci3.services;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -8,18 +8,13 @@ import org.springframework.stereotype.Service;
 import raf.rs.domaci3.model.User;
 import raf.rs.domaci3.repositories.UserRepo;
 
-import jakarta.persistence.Id;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 @Service
+@RequiredArgsConstructor
 public class UserService implements IService, UserDetailsService{
     private final UserRepo userRepo;
-
-    @Autowired
-    public UserService(UserRepo userRepo) {
-        this.userRepo = userRepo;
-    }
 
     @Override
     public User save(User user) {

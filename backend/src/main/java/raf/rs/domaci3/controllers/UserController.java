@@ -1,6 +1,6 @@
 package raf.rs.domaci3.controllers;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -17,19 +17,12 @@ import java.util.List;
 import java.util.Optional;
 
 @RestController
-@CrossOrigin
 @RequestMapping("/api/users")
+@RequiredArgsConstructor
 public class UserController {
     private final UserService userService;
     private final PasswordEncoder passwordEncoder;
     private final PermissionsUtil permissionsUtil;
-
-    @Autowired
-    public UserController(UserService userService, PasswordEncoder passwordEncoder, PermissionsUtil permissionsUtil) {
-        this.userService = userService;
-        this.passwordEncoder = passwordEncoder;
-        this.permissionsUtil = permissionsUtil;
-    }
 
     @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<List<UserResponse>> getAllUsers() {

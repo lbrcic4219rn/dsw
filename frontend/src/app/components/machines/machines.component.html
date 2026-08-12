@@ -1,65 +1,121 @@
-<div class="container">
-  <div class="mt-3 mb-3 w-100" *ngIf="userService.permissions.canSearchMachine == 1">
-    <h1>Search Machines</h1>
-    <form (ngSubmit)="search()">
-      <div class="d-flex justify-content-between align-items-center">
-        <div class="mb-3">
-          <label class="form-label" for="machines-name-filter">Machine Name</label>
-          <input id="machines-name-filter" type="text" class="form-control" name="machineName" [(ngModel)]="machineNameFilter">
+<div class="container py-4">
+
+  @if (userService.can('canSearchMachine')) {
+    <form class="card card-body bg-light-subtle mb-4" (ngSubmit)="search()">
+      <div class="row g-3 align-items-end">
+        <div class="col-12 col-lg-3">
+          <label class="form-label" for="machines-name-filter">Machine name</label>
+          <input id="machines-name-filter" type="text" class="form-control"
+                 name="machineName" [(ngModel)]="machineNameFilter" placeholder="Search by name">
         </div>
-        <div class="mb-3" role="group" aria-labelledby="machines-status-heading">
+
+        <div class="col-12 col-sm-6 col-lg-2" role="group" aria-labelledby="machines-status-heading">
           <div class="form-label" id="machines-status-heading">Status</div>
-          <div class="form-check">
-            <input id="machines-status-running" class="form-check-input" type="checkbox" name="statusRunning" [(ngModel)]="statusRunning">
-            <label class="form-check-label" for="machines-status-running">
-              RUNNING
-            </label>
+          <div class="form-check form-check-inline">
+            <input id="machines-status-running" class="form-check-input" type="checkbox"
+                   name="statusRunning" [(ngModel)]="statusRunning">
+            <label class="form-check-label" for="machines-status-running">Running</label>
           </div>
-          <div class="form-check">
-            <input id="machines-status-stopped" class="form-check-input" type="checkbox" name="statusStopped" [(ngModel)]="statusStopped">
-            <label class="form-check-label" for="machines-status-stopped">
-              STOPPED
-            </label>
+          <div class="form-check form-check-inline">
+            <input id="machines-status-stopped" class="form-check-input" type="checkbox"
+                   name="statusStopped" [(ngModel)]="statusStopped">
+            <label class="form-check-label" for="machines-status-stopped">Stopped</label>
           </div>
         </div>
-        <div class="mb-3" role="group" aria-labelledby="machines-created-heading">
-          <div class="form-label" id="machines-created-heading">Created Between</div>
-          <div class="d-flex flex-column">
-            <input type="date" name="dateFrom" [(ngModel)]="dateFrom" class="form-control mb-2" aria-label="Created from">
-            <input type="date" name="dateTo" [(ngModel)]="dateTo" class="form-control" aria-label="Created to">
+
+        <div class="col-12 col-sm-6 col-lg-4" role="group" aria-labelledby="machines-created-heading">
+          <div class="form-label" id="machines-created-heading">Created between</div>
+          <div class="d-flex gap-2">
+            <input type="date" name="dateFrom" [(ngModel)]="dateFrom"
+                   class="form-control flex-fill" aria-label="Created from">
+            <input type="date" name="dateTo" [(ngModel)]="dateTo"
+                   class="form-control flex-fill" aria-label="Created to">
           </div>
         </div>
-        <div>
-          <button type="submit" class="btn btn-primary">Search</button>
+
+        <div class="col-12 col-lg-3 d-flex gap-2">
+          <button type="submit" class="btn btn-primary flex-fill">Search</button>
+          <button type="button" class="btn btn-outline-secondary" (click)="resetSearch()">Reset</button>
         </div>
       </div>
     </form>
-  </div>
+  }
 
-  <div class="row">
-    <div class="card mb-3 px-3 w-100" *ngFor="let m of machines">
-      <div class="row g-0">
-        <div class="col">
-          <div class="card-body">
-            <h3 class="card-title">{{m.name}}</h3>
-            <p class="card-text">Status: {{m.status}}</p>
-            <p class="card-text">Created at: {{m.createdAt | date }}</p>
-            <button class="btn btn-danger" (click)="destroyMachine(m.id)" *ngIf="userService.permissions.canDestroyMachine == 1" [disabled]="m.status == 'RUNNING' || m.operationActive == 1">Destroy</button>
+  @if (loading()) {
+    <div class="text-center py-5 text-muted">
+      <span class="spinner-border" role="status" aria-hidden="true"></span>
+      <p class="mt-3 mb-0">Loading machines…</p>
+    </div>
+  } @else if (machines().length === 0) {
+    <div class="text-center py-5 text-muted">
+      <p class="mb-0">No machines match.</p>
+    </div>
+  } @else {
+    <div class="row g-3">
+      @for (m of machines(); track m.id) {
+        <div class="col-12">
+          <div class="card">
+            <div class="card-body d-flex flex-wrap justify-content-between align-items-center gap-3">
+
+              <div class="machine-summary">
+                <div class="d-flex align-items-center gap-2">
+                  <h3 class="h5 mb-0">{{ m.name }}</h3>
+                  <span class="badge rounded-pill"
+                        [class.text-bg-success]="m.status === 'RUNNING'"
+                        [class.text-bg-secondary]="m.status === 'STOPPED'">{{ m.status }}</span>
+                  @if (isBusy(m)) {
+                    <span class="badge rounded-pill text-bg-warning">Working…</span>
+                  }
+                </div>
+                <small class="text-muted">Created {{ m.createdAt | date:'medium' }}</small>
+              </div>
+
+              <div class="d-flex flex-wrap align-items-center gap-2">
+                @if (userService.can('canStartMachine')) {
+                  <button class="btn btn-sm btn-outline-success"
+                          [disabled]="m.status === 'RUNNING' || isBusy(m)"
+                          (click)="startMachine(m)">Start
+                  </button>
+                }
+                @if (userService.can('canStopMachine')) {
+                  <button class="btn btn-sm btn-outline-danger"
+                          [disabled]="m.status === 'STOPPED' || isBusy(m)"
+                          (click)="stopMachine(m)">Stop
+                  </button>
+                }
+                @if (userService.can('canRestartMachine')) {
+                  <button class="btn btn-sm btn-outline-warning"
+                          [disabled]="m.status === 'STOPPED' || isBusy(m)"
+                          (click)="restartMachine(m)">Restart
+                  </button>
+                }
+                @if (userService.can('canDestroyMachine')) {
+                  <button class="btn btn-sm btn-outline-secondary"
+                          [disabled]="m.status === 'RUNNING' || isBusy(m)"
+                          (click)="destroyMachine(m)">Destroy
+                  </button>
+                }
+              </div>
+            </div>
+
+            <div class="card-footer bg-transparent d-flex flex-wrap align-items-center gap-2">
+              <label class="text-muted small mb-0" [for]="'schedule-' + m.id">Schedule</label>
+              <input [id]="'schedule-' + m.id" type="datetime-local"
+                     class="form-control form-control-sm schedule-input"
+                     name="scheduleDate" [(ngModel)]="scheduleDate">
+              @if (userService.can('canStartMachine')) {
+                <button class="btn btn-sm btn-link" [disabled]="isBusy(m)" (click)="scheduleStart(m)">start</button>
+              }
+              @if (userService.can('canStopMachine')) {
+                <button class="btn btn-sm btn-link" [disabled]="isBusy(m)" (click)="scheduleStop(m)">stop</button>
+              }
+              @if (userService.can('canRestartMachine')) {
+                <button class="btn btn-sm btn-link" [disabled]="isBusy(m)" (click)="scheduleRestart(m)">restart</button>
+              }
+            </div>
           </div>
         </div>
-        <div class="col d-flex flex-column justify-content-around p-2">
-          <button *ngIf="userService.permissions.canStartMachine == 1" class="btn btn-success" [disabled]="m.status == 'RUNNING' || m.operationActive == 1" (click)="startMachine(m.id)">START</button>
-          <button *ngIf="userService.permissions.canStopMachine == 1" class="btn btn-danger" [disabled]="m.status == 'STOPPED' || m.operationActive == 1" (click)="stopMachine(m.id)">STOP</button>
-          <button *ngIf="userService.permissions.canRestartMachine == 1" class="btn btn-warning" [disabled]="m.status == 'STOPPED' || m.operationActive == 1" (click)="restartMachine(m.id)">RESTART</button>
-        </div>
-        <div class="d-flex flex-column justify-content-around p-2">
-          <p>Schedule Operation</p>
-          <input type="datetime-local" class="form-control" aria-label="Schedule operation date and time" [ngModel]="scheduleDate | date:'yyyy-MM-ddTHH:mm'" (ngModelChange)="scheduleDate = $event">
-          <button *ngIf="userService.permissions.canStartMachine == 1" class="btn btn-success" (click)="scheduleStartMachine(m.id)">SCHEDULE START</button>
-          <button *ngIf="userService.permissions.canStopMachine == 1" class="btn btn-danger" (click)="scheduleStopMachine(m.id)">SCHEDULE STOP</button>
-          <button *ngIf="userService.permissions.canRestartMachine == 1" class="btn btn-warning" (click)="scheduleRestartMachine(m.id)">SCHEDULE RESTART</button>
-        </div>
-      </div>
+      }
     </div>
-  </div>
+  }
 </div>

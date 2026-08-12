@@ -1,9 +1,9 @@
-import { Component, inject } from '@angular/core';
-import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import {Component, inject, signal} from '@angular/core';
+import {FormsModule} from '@angular/forms';
+import {Router} from '@angular/router';
 
-import { UserService } from '../../services/user.service';
-import { ApiService } from '../../services/api.service';
+import {UserService} from '../../services/user.service';
+import {NotificationService} from '../../services/notification.service';
 
 @Component({
   selector: 'app-login',
@@ -13,33 +13,43 @@ import { ApiService } from '../../services/api.service';
 })
 export class LoginComponent {
 
-  email: string = '';
-  password: string = '';
+  email = '';
+  password = '';
 
-  private readonly api = inject(ApiService);
+  readonly submitting = signal(false);
+
   private readonly userService = inject(UserService);
+  private readonly notifications = inject(NotificationService);
   private readonly router = inject(Router);
 
-  handleLogin() {
-    this.api.login(
-      {
-        email: this.email,
-        password: this.password
-      }
-    ).subscribe({
-      next: (response) => {
-        localStorage.setItem('jwt_token', response.token);
-        this.userService.login(response.token);
-        this.router.navigate(['/']);
-        alert('Logged in!')
+  handleLogin(): void {
+    if (this.submitting()) {
+      return;
+    }
+    if (!this.email.trim() || !this.password) {
+      this.notifications.error('Enter both an email and a password.');
+      return;
+    }
+
+    this.submitting.set(true);
+    this.userService.login(this.email.trim(), this.password).subscribe({
+      next: () => {
+        this.submitting.set(false);
+        if (!this.userService.hasAnyPermission()) {
+          this.notifications.error('This account has no permissions.');
+          this.userService.logout();
+          return;
+        }
+        this.notifications.success('Signed in.');
+        void this.router.navigate(['/']);
       },
-      error: (err) => {
-        if (err.status == 401)
-          alert('Bad credentials');
-        else
-          alert('Server error');
+      error: err => {
+        this.submitting.set(false);
+        this.notifications.error(
+          err.status === 401 ? 'Bad credentials.' : 'Could not sign in. Please try again.'
+        );
       }
-    })
+    });
   }
 
 }

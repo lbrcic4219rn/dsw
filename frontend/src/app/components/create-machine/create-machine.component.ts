@@ -1,35 +1,41 @@
-import { Component, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
+import {Component, inject, signal} from '@angular/core';
+import {FormsModule} from '@angular/forms';
 
-import { UserService } from '../../services/user.service';
-import { ApiService } from '../../services/api.service';
+import {UserService} from '../../services/user.service';
+import {ApiService} from '../../services/api.service';
+import {NotificationService} from '../../services/notification.service';
 
 @Component({
   selector: 'app-create-machine',
-  imports: [CommonModule, FormsModule],
+  imports: [FormsModule],
   templateUrl: './create-machine.component.html',
   styleUrls: ['./create-machine.component.css']
 })
 export class CreateMachineComponent {
-  machineName: string = "";
+
+  machineName = '';
+
+  readonly submitting = signal(false);
 
   private readonly api = inject(ApiService);
+  private readonly notifications = inject(NotificationService);
   readonly userService = inject(UserService);
 
-  createMachine() {
-    if (this.machineName.trim().length == 0) {
-      alert("machine name is required");
+  createMachine(): void {
+    const name = this.machineName.trim();
+    if (name.length === 0) {
+      this.notifications.error('Machine name is required.');
       return;
     }
-    this.api.createMachine(this.machineName.trim()).subscribe({
+
+    this.submitting.set(true);
+    this.api.createMachine(name).subscribe({
       next: () => {
-        alert("Machine created");
-        this.machineName = "";
+        this.submitting.set(false);
+        this.machineName = '';
+        this.notifications.success(`Machine "${name}" created.`);
       },
-      error: error => {
-        alert("error: " + error);
-      }
-    })
+      error: () => this.submitting.set(false)
+    });
   }
 }

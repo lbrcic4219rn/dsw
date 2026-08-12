@@ -1,28 +1,31 @@
-import { Component, OnInit, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import {Component, OnInit, inject, signal} from '@angular/core';
+import {DatePipe} from '@angular/common';
 
-import { ApiService } from '../../services/api.service';
-import { ErrorMessage } from '../../model';
+import {ApiService} from '../../services/api.service';
+import {ErrorMessage} from '../../model';
 
 @Component({
   selector: 'app-logs',
-  imports: [CommonModule],
+  imports: [DatePipe],
   templateUrl: './logs.component.html',
   styleUrls: ['./logs.component.css']
 })
 export class LogsComponent implements OnInit {
 
-  errorLogs: ErrorMessage[] = [];
-
   private readonly api = inject(ApiService);
 
+  readonly errorLogs = signal<ErrorMessage[]>([]);
+  readonly loading = signal(false);
+
   ngOnInit(): void {
+    this.loading.set(true);
     this.api.getErrorLogs().subscribe({
-      next: (logs: ErrorMessage[]) => {
-        this.errorLogs = logs
+      next: logs => {
+        this.errorLogs.set(logs);
+        this.loading.set(false);
       },
-      error: error => console.log(error)
-    })
+      error: () => this.loading.set(false)
+    });
   }
 
 }

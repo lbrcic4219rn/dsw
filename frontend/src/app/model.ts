@@ -1,40 +1,69 @@
 export interface LoginRequest {
-  email: string,
-  password: string
+  email: string;
+  password: string;
 }
 
 export interface Permissions {
-  canReadUser: 0 | 1,
-  canCreateUser: 0 | 1,
-  canUpdateUser: 0 | 1,
-  canDeleteUser: 0 | 1,
-  canSearchMachine: 0 | 1,
-  canStartMachine: 0 | 1,
-  canStopMachine: 0 | 1,
-  canRestartMachine: 0 | 1,
-  canCreateMachine: 0 | 1,
-  canDestroyMachine: 0 | 1,
+  canReadUser: 0 | 1;
+  canCreateUser: 0 | 1;
+  canUpdateUser: 0 | 1;
+  canDeleteUser: 0 | 1;
+  canSearchMachine: 0 | 1;
+  canStartMachine: 0 | 1;
+  canStopMachine: 0 | 1;
+  canRestartMachine: 0 | 1;
+  canCreateMachine: 0 | 1;
+  canDestroyMachine: 0 | 1;
 }
+
+export type PermissionKey = keyof Permissions;
 
 export interface User {
-  id: number,
-  name: string,
-  surname: string,
-  email: string,
-  permission: Permissions
+  id: number;
+  name: string;
+  surname: string;
+  email: string;
+  permission: Permissions;
 }
 
+export interface UserPayload {
+  name: string;
+  surname: string;
+  email: string;
+  password: string;
+  permission: Permissions;
+}
+
+export type MachineStatus = 'RUNNING' | 'STOPPED';
+
 export interface Machine {
-  id: number,
-  name: string,
-  status: 'RUNNING' | 'STOPPED',
-  createdAt: Date,
-  operationActive: number
+  id: number;
+  name: string;
+  status: MachineStatus;
+  createdAt: string;
+  /** Serialized from a Java boolean, not an int. */
+  operationActive: boolean;
 }
 
 export interface ErrorMessage {
-  errorDate: Date,
-  machineId: number,
-  operationName: string,
-  errorMessage: string
+  errorDate: string;
+  machineId: number;
+  operationName: string;
+  errorMessage: string;
+}
+
+export interface Session {
+  id: number;
+  name: string;
+  surname: string;
+  email: string;
+  permission: Permissions;
+}
+
+export interface MachineSearchFilters {
+  name?: string;
+  statusRunning: boolean;
+  statusStopped: boolean;
+  dateFrom?: string | null;
+  dateTo?: string | null;
 }

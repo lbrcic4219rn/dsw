@@ -3,10 +3,7 @@ package raf.rs.domaci3.util;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.io.Decoders;
-import io.jsonwebtoken.security.Keys;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 import raf.rs.domaci3.model.User;
@@ -19,16 +16,11 @@ import java.util.Map;
 import java.util.Optional;
 
 @Component
+@RequiredArgsConstructor
 public class JwtUtil {
+
     private final UserService userService;
     private final SecretKey secretKey;
-
-    @Autowired
-    public JwtUtil (UserService userService,
-                    @Value("${app.jwt.secret}") String secret) {
-        this.userService = userService;
-        this.secretKey = Keys.hmacShaKeyFor(Decoders.BASE64.decode(secret));
-    }
 
     public Claims extractClaims(String token) {
         return Jwts.parser().verifyWith(this.secretKey).build().parseSignedClaims(token).getPayload();

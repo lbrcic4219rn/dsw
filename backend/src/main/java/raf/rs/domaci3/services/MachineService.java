@@ -1,6 +1,6 @@
 package raf.rs.domaci3.services;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.scheduling.TaskScheduler;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.concurrent.ConcurrentTaskScheduler;
@@ -25,19 +25,13 @@ import java.util.Optional;
 import java.util.concurrent.Executors;
 
 @Service
+@RequiredArgsConstructor
 public class MachineService {
     private final TaskScheduler taskScheduler = new ConcurrentTaskScheduler(Executors.newScheduledThreadPool(10));
 
     private final MachineRepo machineRepo;
     private final UserService userService;
     private final ErrorMessageRepo errorMessageRepo;
-
-    @Autowired
-    public MachineService(MachineRepo machineRepo, UserService userService, ErrorMessageRepo errorMessageRepo) {
-        this.machineRepo = machineRepo;
-        this.userService = userService;
-        this.errorMessageRepo = errorMessageRepo;
-    }
 
     public List<Machine> getAllUserMachines() {
         String username = SecurityContextHolder.getContext().getAuthentication().getName();

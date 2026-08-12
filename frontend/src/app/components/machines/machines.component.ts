@@ -1,139 +1,173 @@
-import { Component, OnInit, inject } from '@angular/core';
-import { CommonModule, DatePipe } from '@angular/common';
-import { FormsModule } from '@angular/forms';
+import {Component, OnInit, inject, signal} from '@angular/core';
+import {DatePipe} from '@angular/common';
+import {FormsModule} from '@angular/forms';
+import {Observable} from 'rxjs';
 
-import { UserService } from '../../services/user.service';
-import { ApiService } from '../../services/api.service';
-import { Machine } from '../../model';
+import {UserService} from '../../services/user.service';
+import {ApiService} from '../../services/api.service';
+import {NotificationService} from '../../services/notification.service';
+import {Machine} from '../../model';
+
+const REFRESH_AFTER_OPERATION_MS = 15000;
 
 @Component({
   selector: 'app-machines',
-  imports: [CommonModule, FormsModule],
+  imports: [FormsModule, DatePipe],
+  providers: [DatePipe],
   templateUrl: './machines.component.html',
   styleUrls: ['./machines.component.css']
 })
 export class MachinesComponent implements OnInit {
-  datePipe = new DatePipe('en-US');
-
-  scheduleDate: any;
-  machines: Machine[] = []
-
-  //SEARCH
-  machineNameFilter: string = "";
-  statusRunning: boolean = false;
-  statusStopped: boolean = false;
-  dateFrom!: string;
-  dateTo!: string;
 
   private readonly api = inject(ApiService);
+  private readonly notifications = inject(NotificationService);
+  private readonly datePipe = inject(DatePipe);
   readonly userService = inject(UserService);
 
+  readonly machines = signal<Machine[]>([]);
+  readonly loading = signal(false);
+  /** Ids with an in-flight request, so only that card's buttons disable. */
+  readonly busyIds = signal<ReadonlySet<number>>(new Set());
+
+  scheduleDate = '';
+
+  machineNameFilter = '';
+  statusRunning = false;
+  statusStopped = false;
+  dateFrom = '';
+  dateTo = '';
+
   ngOnInit(): void {
-    this.refreshMachines();
+    this.refresh();
   }
 
-  private refreshMachines(delayedRefreshMs?: number) {
-    this.api.getAllMachines().subscribe(
-      (data: Machine[]) => {
-        this.machines = data
-        if (delayedRefreshMs) {
-          setTimeout(() => this.refreshMachines(), delayedRefreshMs);
-        }
-      }
-    )
+  isBusy(machine: Machine): boolean {
+    return this.busyIds().has(machine.id) || machine.operationActive;
   }
 
-  startMachine(id: number) {
-    this.api.startMachine(id).subscribe(
-      () => {
-        alert("started machine");
-        this.refreshMachines(15000);
-      }
-    )
+  refresh(showSpinner = true): void {
+    if (showSpinner) {
+      this.loading.set(true);
+    }
+    this.api.getAllMachines().subscribe({
+      next: machines => {
+        this.machines.set(machines);
+        this.loading.set(false);
+      },
+      error: () => this.loading.set(false)
+    });
   }
 
-  stopMachine(id: number) {
-    this.api.stopMachine(id).subscribe(
-      () => {
-        alert("stopped machine");
-        this.refreshMachines(15000);
-      }
-    )
+  startMachine(machine: Machine): void {
+    this.runOperation(machine, this.api.startMachine(machine.id), 'Start requested');
   }
 
-  restartMachine(id: number) {
-    this.api.restartMachine(id).subscribe(
-      () => {
-        alert("stopped machine");
-        this.refreshMachines(30000);
-      }
-    )
+  stopMachine(machine: Machine): void {
+    this.runOperation(machine, this.api.stopMachine(machine.id), 'Stop requested');
   }
 
-  scheduleStartMachine(id: number) {
-    if (!this.scheduleDate) {
-      alert('Please select a date');
+  restartMachine(machine: Machine): void {
+    this.runOperation(machine, this.api.restartMachine(machine.id), 'Restart requested');
+  }
+
+  destroyMachine(machine: Machine): void {
+    if (!confirm(`Destroy "${machine.name}"? This cannot be undone.`)) {
       return;
     }
-
-    this.api.scheduleStartMachine(id, this.scheduleDate.replace('T', ' ')).subscribe(
-      () => {
-        alert('Machine start scheduled');
-      }
-    )
+    this.runOperation(machine, this.api.destroyMachine(machine.id), 'Machine destroyed', false);
   }
 
-  scheduleStopMachine(id: number) {
-    if (!this.scheduleDate) {
-      alert('Please select a date');
-      return;
-    }
-
-    this.api.scheduleStopMachine(id, this.scheduleDate.replace('T', ' ')).subscribe(
-      () => {
-        alert('Machine stop scheduled');
-      }
-    )
+  scheduleStart(machine: Machine): void {
+    this.schedule(machine, id => this.api.scheduleStartMachine(id, this.scheduleTime()), 'start');
   }
 
-  scheduleRestartMachine(id: number) {
-    if (!this.scheduleDate) {
-      alert('Please select a date');
-      return;
-    }
-
-    this.api.scheduleRestartMachine(id, this.scheduleDate.replace('T', ' ')).subscribe(
-      () => {
-        alert('Machine restart scheduled');
-      }
-    )
+  scheduleStop(machine: Machine): void {
+    this.schedule(machine, id => this.api.scheduleStopMachine(id, this.scheduleTime()), 'stop');
   }
 
-  destroyMachine(id: number) {
-    this.api.destroyMachine(id).subscribe(
-      () => {
-        alert('Machine destroyed');
-        this.refreshMachines();
-      }
-    )
+  scheduleRestart(machine: Machine): void {
+    this.schedule(machine, id => this.api.scheduleRestartMachine(id, this.scheduleTime()), 'restart');
   }
 
-  search() {
+  search(): void {
     if ((this.dateFrom && !this.dateTo) || (!this.dateFrom && this.dateTo)) {
-      alert('Please select both date filters or none.')
+      this.notifications.error('Select both date filters, or neither.');
       return;
     }
 
-    this.api.searchMachines(
-      this.machineNameFilter,
-      this.statusStopped,
-      this.statusRunning,
-      this.datePipe.transform(this.dateFrom, 'dd-MM-yyyy'),
-      this.datePipe.transform(this.dateTo, 'dd-MM-yyyy')
-    ).subscribe(
-      (data: Machine[]) => {
-        this.machines = data
+    this.loading.set(true);
+    this.api.searchMachines({
+      name: this.machineNameFilter.trim(),
+      statusRunning: this.statusRunning,
+      statusStopped: this.statusStopped,
+      dateFrom: this.datePipe.transform(this.dateFrom, 'dd-MM-yyyy'),
+      dateTo: this.datePipe.transform(this.dateTo, 'dd-MM-yyyy')
+    }).subscribe({
+      next: machines => {
+        this.machines.set(machines);
+        this.loading.set(false);
+      },
+      error: () => this.loading.set(false)
+    });
+  }
+
+  resetSearch(): void {
+    this.machineNameFilter = '';
+    this.statusRunning = false;
+    this.statusStopped = false;
+    this.dateFrom = '';
+    this.dateTo = '';
+    this.refresh();
+  }
+
+  private scheduleTime(): string {
+    return this.scheduleDate.replace('T', ' ');
+  }
+
+  private schedule(machine: Machine,
+                   call: (id: number) => Observable<void>,
+                   label: string): void {
+    if (!this.scheduleDate) {
+      this.notifications.error('Pick a date and time first.');
+      return;
+    }
+    this.markBusy(machine.id, true);
+    call(machine.id).subscribe({
+      next: () => {
+        this.markBusy(machine.id, false);
+        this.notifications.success(`Scheduled ${label} for "${machine.name}".`);
+      },
+      error: () => this.markBusy(machine.id, false)
+    });
+  }
+
+  private runOperation(machine: Machine,
+                       request: Observable<void>,
+                       message: string,
+                       repollLater = true): void {
+    this.markBusy(machine.id, true);
+    request.subscribe({
+      next: () => {
+        this.markBusy(machine.id, false);
+        this.notifications.success(`${message}: "${machine.name}".`);
+        this.refresh(false);
+        if (repollLater) {
+          setTimeout(() => this.refresh(false), REFRESH_AFTER_OPERATION_MS);
+        }
+      },
+      error: () => this.markBusy(machine.id, false)
+    });
+  }
+
+  private markBusy(id: number, busy: boolean): void {
+    this.busyIds.update(ids => {
+      const next = new Set(ids);
+      if (busy) {
+        next.add(id);
+      } else {
+        next.delete(id);
       }
-    )
+      return next;
+    });
   }
 }

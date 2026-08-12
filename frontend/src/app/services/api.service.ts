@@ -1,133 +1,125 @@
-import { Injectable } from '@angular/core';
-import {HttpClient, HttpParams} from "@angular/common/http";
-import {LoginRequest, User} from "../model";
-import {environment} from "../../environments/environment";
-import {Observable} from "rxjs";
+import {Injectable, inject} from '@angular/core';
+import {HttpClient, HttpParams} from '@angular/common/http';
+import {Observable} from 'rxjs';
+
+import {environment} from '../../environments/environment';
+import {
+  ErrorMessage,
+  LoginRequest,
+  Machine,
+  MachineSearchFilters,
+  Session,
+  User,
+  UserPayload
+} from '../model';
 
 @Injectable({
   providedIn: 'root'
 })
 export class ApiService {
 
-  constructor(private http: HttpClient) { }
+  private readonly http = inject(HttpClient);
+  private readonly base = environment.BASE_URL;
 
-  login(formData: LoginRequest) {
-    return this.http.post<any>(`${environment.BASE_URL}/auth/login`, formData);
+  // ---- auth ----
+
+  login(credentials: LoginRequest): Observable<Session> {
+    return this.http.post<Session>(`${this.base}/auth/login`, credentials);
   }
 
-  getAllUsers() {
-    return this.http.get<User[]>(`${environment.BASE_URL}/api/users`);
+  me(): Observable<Session> {
+    return this.http.get<Session>(`${this.base}/auth/me`);
   }
 
-  createNewUser(formData: User) {
-    return this.http.post(`${environment.BASE_URL}/api/users`, formData);
+  logout(): Observable<void> {
+    return this.http.post<void>(`${this.base}/auth/logout`, {});
   }
 
-  getUserById(id: number) {
-    return this.http.get(`${environment.BASE_URL}/api/users/${id}`);
+  // ---- users ----
+
+  getAllUsers(): Observable<User[]> {
+    return this.http.get<User[]>(`${this.base}/api/users`);
   }
 
-  editUser(id: number, formData: User) {
-    return this.http.put(`${environment.BASE_URL}/api/users/${id}`, formData);
+  getUserById(id: number): Observable<User> {
+    return this.http.get<User>(`${this.base}/api/users/${id}`);
   }
 
-  deleteUser(id: number) {
-    return this.http.delete(`${environment.BASE_URL}/api/users/${id}`);
+  createNewUser(payload: UserPayload): Observable<User> {
+    return this.http.post<User>(`${this.base}/api/users`, payload);
   }
 
-  getAllMachines(): Observable<any> {
-    return this.http.get(`${environment.BASE_URL}/api/machines`);
+  editUser(id: number, payload: UserPayload): Observable<User> {
+    return this.http.put<User>(`${this.base}/api/users/${id}`, payload);
   }
 
-  createMachine(machineName: string) {
-    return this.http.post<any>(
-      `${environment.BASE_URL}/api/machines`,
-      {
-        name: machineName
-      }
-    )
+  deleteUser(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.base}/api/users/${id}`);
   }
 
-  startMachine(id: number): Observable<any> {
-    return this.http.patch(
-      `${environment.BASE_URL}/api/machines/start/${id}`,
-      {}
-    );
+  // ---- machines ----
+
+  getAllMachines(): Observable<Machine[]> {
+    return this.http.get<Machine[]>(`${this.base}/api/machines`);
   }
 
-  stopMachine(id: number): Observable<any> {
-    return this.http.patch(
-      `${environment.BASE_URL}/api/machines/stop/${id}`,
-      {}
-    );
+  createMachine(name: string): Observable<Machine> {
+    return this.http.post<Machine>(`${this.base}/api/machines`, {name});
   }
 
-  restartMachine(id: number): Observable<any> {
-    return this.http.patch(
-      `${environment.BASE_URL}/api/machines/restart/${id}`,
-      {}
-    );
+  startMachine(id: number): Observable<void> {
+    return this.http.patch<void>(`${this.base}/api/machines/start/${id}`, {});
   }
 
-  scheduleStartMachine(id: number, date: string): Observable<any> {
-    return this.http.patch(
-      `${environment.BASE_URL}/api/machines/schedule/start/${id}`,
-      {
-        time: date,
-      }
-    );
+  stopMachine(id: number): Observable<void> {
+    return this.http.patch<void>(`${this.base}/api/machines/stop/${id}`, {});
   }
 
-  scheduleStopMachine(id: number, date: string): Observable<any> {
-    return this.http.patch(
-      `${environment.BASE_URL}/api/machines/schedule/stop/${id}`,
-      {
-        time: date,
-      }
-    );
+  restartMachine(id: number): Observable<void> {
+    return this.http.patch<void>(`${this.base}/api/machines/restart/${id}`, {});
   }
 
-  scheduleRestartMachine(id: number, date: string): Observable<any> {
-    return this.http.patch(
-      `${environment.BASE_URL}/api/machines/schedule/restart/${id}`,
-      {
-        time: date,
-      }
-    );
+  scheduleStartMachine(id: number, time: string): Observable<void> {
+    return this.http.patch<void>(`${this.base}/api/machines/schedule/start/${id}`, {time});
   }
 
-  destroyMachine(id: number): Observable<any> {
-    return this.http.delete(`${environment.BASE_URL}/api/machines/${id}`);
+  scheduleStopMachine(id: number, time: string): Observable<void> {
+    return this.http.patch<void>(`${this.base}/api/machines/schedule/stop/${id}`, {time});
   }
 
-  searchMachines(name: string, statusStopped: boolean, statusRunning: boolean, dateFrom: any, dateTo: any): Observable<any> {
-    let params = new HttpParams()
-    if(name) params = params.append("name", name);
+  scheduleRestartMachine(id: number, time: string): Observable<void> {
+    return this.http.patch<void>(`${this.base}/api/machines/schedule/restart/${id}`, {time});
+  }
 
-    let status = "";
-    const statusList = [];
+  destroyMachine(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.base}/api/machines/${id}`);
+  }
 
-    if(statusStopped) {statusList.push('STOPPED')};
-    if(statusRunning) {statusList.push('RUNNING')};
-    if(statusList.length > 0) {
-      status = statusList.join(",");
-      params = params.append("status", status)
-    };
+  searchMachines(filters: MachineSearchFilters): Observable<Machine[]> {
+    let params = new HttpParams();
 
-    if(dateFrom && dateTo) {
-      params = params.append("dateFrom", dateFrom);
-      params = params.append("dateTo", dateTo);
+    if (filters.name) {
+      params = params.append('name', filters.name);
     }
 
-    return this.http.get(
-      `${environment.BASE_URL}/api/machines/search`,
-      {
-           params: params
-      }
-    )
+    const statuses: string[] = [];
+    if (filters.statusStopped) statuses.push('STOPPED');
+    if (filters.statusRunning) statuses.push('RUNNING');
+    if (statuses.length > 0) {
+      params = params.append('status', statuses.join(','));
+    }
+
+    if (filters.dateFrom && filters.dateTo) {
+      params = params.append('dateFrom', filters.dateFrom);
+      params = params.append('dateTo', filters.dateTo);
+    }
+
+    return this.http.get<Machine[]>(`${this.base}/api/machines/search`, {params});
   }
 
-  getErrorLogs(): Observable<any>{
-    return this.http.get<any>(`${environment.BASE_URL}/api/logs`);
+  // ---- logs ----
+
+  getErrorLogs(): Observable<ErrorMessage[]> {
+    return this.http.get<ErrorMessage[]>(`${this.base}/api/logs`);
   }
 }

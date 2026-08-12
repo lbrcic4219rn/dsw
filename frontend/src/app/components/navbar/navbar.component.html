@@ -1,27 +1,35 @@
-<nav *ngIf="userService.loggedIn" class="navbar navbar-expand-lg navbar-light bg-light">
-  <div class="container-fluid">
-    <a class="navbar-brand" [routerLink]="['/']">User Management</a>
-    <div class="collapse navbar-collapse" id="navbarColor01">
-      <ul class="navbar-nav me-auto">
+@if (userService.loggedIn()) {
+  <nav class="navbar navbar-expand-lg navbar-light bg-light border-bottom">
+    <div class="container-fluid">
+      <a class="navbar-brand" [routerLink]="['/']">User Management</a>
+      <ul class="navbar-nav me-auto flex-row gap-3">
         <li class="nav-item">
-          <a class="nav-link" [routerLink]="['/']" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" href="#">Home</a>
+          <a class="nav-link" [routerLink]="['/']" routerLinkActive="active"
+             [routerLinkActiveOptions]="{ exact: true }">Home</a>
         </li>
-        <li class="nav-item" *ngIf="userService.permissions.canCreateUser == 1">
-          <a class="nav-link" [routerLink]="['/create']" routerLinkActive="active"  href="#">Create User</a>
-        </li>
+        @if (userService.can('canCreateUser')) {
+          <li class="nav-item">
+            <a class="nav-link" [routerLink]="['/create']" routerLinkActive="active">Create User</a>
+          </li>
+        }
         <li class="nav-item">
           <a class="nav-link" [routerLink]="['/machines']" routerLinkActive="active">Machines</a>
         </li>
-        <li class="nav-item" *ngIf="userService.permissions.canCreateMachine == 1">
-          <a class="nav-link" [routerLink]="['/create-machine']" routerLinkActive="active">Create Machine</a>
-        </li>
+        @if (userService.can('canCreateMachine')) {
+          <li class="nav-item">
+            <a class="nav-link" [routerLink]="['/create-machine']" routerLinkActive="active">Create Machine</a>
+          </li>
+        }
         <li class="nav-item">
           <a class="nav-link" [routerLink]="['/logs']" routerLinkActive="active">Error Logs</a>
         </li>
       </ul>
+      <div class="d-flex align-items-center gap-3">
+        @if (userService.session(); as session) {
+          <span class="text-muted small">{{ session.email }}</span>
+        }
+        <button class="btn btn-sm btn-outline-secondary" (click)="logout()">Log out</button>
+      </div>
     </div>
-    <div class="d-flex">
-      <button class="btn btn-sm btn-outline-secondary" (click)="logout()">Log out</button>
-    </div>
-  </div>
-</nav>
+  </nav>
+}

@@ -1,16 +1,27 @@
-<div class="container mt-5">
-  <div *ngIf="userService.permissions.canCreateMachine == 1">
-    <h2>Create new machine</h2>
-    <form (ngSubmit)="createMachine()">
-      <div class="mb-3">
-        <label class="form-label mt-4" for="create-machine-name">Machine name</label>
-        <input id="create-machine-name" type="text" class="form-control" name="machineName" [(ngModel)]="machineName">
+<div class="container py-4">
+  @if (!userService.can('canCreateMachine')) {
+    <div class="alert alert-warning">You do not have permission to create machines.</div>
+  } @else {
+    <div class="row justify-content-center">
+      <div class="col-md-6">
+        <h2 class="h4 mb-3">Create new machine</h2>
+        <form (ngSubmit)="createMachine()">
+          <div class="mb-3">
+            <label class="form-label" for="create-machine-name">Machine name</label>
+            <input id="create-machine-name" type="text" class="form-control"
+                   name="machineName" [(ngModel)]="machineName"
+                   [disabled]="submitting()" placeholder="e.g. build-server-01">
+          </div>
+          <button type="submit" class="btn btn-primary" [disabled]="submitting()">
+            @if (submitting()) {
+              <span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>
+              Creating…
+            } @else {
+              Create machine
+            }
+          </button>
+        </form>
       </div>
-      <button type="submit" class="btn btn-primary mt-2">Submit</button>
-    </form>
-  </div>
-
-  <div *ngIf="userService.permissions.canCreateMachine == 0">
-    <h2>No permission to create machine</h2>
-  </div>
+    </div>
+  }
 </div>

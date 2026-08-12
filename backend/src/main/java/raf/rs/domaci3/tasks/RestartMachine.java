@@ -1,6 +1,6 @@
 package raf.rs.domaci3.tasks;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import raf.rs.domaci3.model.ErrorMessage;
 import raf.rs.domaci3.model.Machine;
 import raf.rs.domaci3.model.User;
@@ -12,21 +12,13 @@ import raf.rs.domaci3.services.UserService;
 import java.util.Date;
 import java.util.Optional;
 
+@RequiredArgsConstructor
 public class RestartMachine implements Runnable{
-    private Long machineId;
-    private User client;
+    private final Long machineId;
+    private final User client;
     private final MachineRepo machineRepo;
     private final ErrorMessageRepo errorMessageRepo;
     private final UserService userService;
-
-    @Autowired
-    public RestartMachine (Long machineId, User client, MachineRepo machineRepo, ErrorMessageRepo errorMessageRepo, UserService userService) {
-        this.machineId = machineId;
-        this.client = client;
-        this.machineRepo = machineRepo;
-        this.errorMessageRepo = errorMessageRepo;
-        this.userService = userService;
-    }
 
     @Override
     public void run() {

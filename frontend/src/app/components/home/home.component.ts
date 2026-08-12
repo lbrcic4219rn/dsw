@@ -1,54 +1,58 @@
-import { Component, OnInit, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { RouterLink } from '@angular/router';
+import {Component, OnInit, inject, signal} from '@angular/core';
+import {RouterLink} from '@angular/router';
 
-import { User } from '../../model';
-import { ApiService } from '../../services/api.service';
-import { UserService } from '../../services/user.service';
+import {User} from '../../model';
+import {ApiService} from '../../services/api.service';
+import {UserService} from '../../services/user.service';
+import {NotificationService} from '../../services/notification.service';
 
 @Component({
   selector: 'app-home',
-  imports: [CommonModule, RouterLink],
+  imports: [RouterLink],
   templateUrl: './home.component.html',
   styleUrls: ['./home.component.css']
 })
 export class HomeComponent implements OnInit {
 
   private readonly api = inject(ApiService);
-  private readonly userService = inject(UserService);
+  private readonly notifications = inject(NotificationService);
+  readonly userService = inject(UserService);
 
-  userList: User[] = []
-  hasPermission: boolean = true;
-
-  canUpdate: number = this.userService.permissions.canUpdateUser
-  canDelete: number = this.userService.permissions.canDeleteUser
+  readonly users = signal<User[]>([]);
+  readonly loading = signal(false);
+  readonly deletingId = signal<number | null>(null);
 
   ngOnInit(): void {
-    if (this.userService.permissions.canReadUser == 1) {
+    if (this.userService.can('canReadUser')) {
       this.getAllUsers();
-    } else {
-      this.hasPermission = false;
     }
   }
 
-  getAllUsers() {
-    this.api.getAllUsers().subscribe(
-      response => {
-        this.userList = response
-      }
-    )
+  getAllUsers(): void {
+    this.loading.set(true);
+    this.api.getAllUsers().subscribe({
+      next: users => {
+        this.users.set(users);
+        this.loading.set(false);
+      },
+      error: () => this.loading.set(false)
+    });
   }
 
-  handleDelete(id: number) {
-    this.api.deleteUser(id).subscribe({
+  handleDelete(user: User): void {
+    if (!confirm(`Delete ${user.name} ${user.surname} (${user.email})?`)) {
+      return;
+    }
+
+    this.deletingId.set(user.id);
+    this.api.deleteUser(user.id).subscribe({
       next: () => {
-        alert('User deleted')
+        this.deletingId.set(null);
+        this.notifications.success('User deleted.');
         this.getAllUsers();
       },
-      error: err => {
-        console.log(err);
-      }
-    })
+      error: () => this.deletingId.set(null)
+    });
   }
 
 }

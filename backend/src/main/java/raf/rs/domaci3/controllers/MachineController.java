@@ -1,7 +1,7 @@
 package raf.rs.domaci3.controllers;
 
+import lombok.RequiredArgsConstructor;
 import org.apache.coyote.Response;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -21,20 +21,13 @@ import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 @RestController
-@CrossOrigin
 @RequestMapping("api/machines")
+@RequiredArgsConstructor
 public class MachineController {
 
     private final MachineService machineService;
     private final UserService userService;
     private final PermissionsUtil permissionsUtil;
-
-    @Autowired
-    public MachineController(MachineService machineService, UserService userService, PermissionsUtil permissionsUtil) {
-        this.machineService = machineService;
-        this.userService = userService;
-        this.permissionsUtil = permissionsUtil;
-    }
 
     @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> getAllUserMachines() {
@@ -67,7 +60,7 @@ public class MachineController {
         User user = userService.findByEmail(SecurityContextHolder.getContext().getAuthentication().getName()).get();
 
         Optional<Machine> machine = machineService.findById(Long.parseLong(id));
-        if (!machine.isPresent()) {
+        if (machine.isEmpty()) {
             return ResponseEntity.status(404).build();
         }
 

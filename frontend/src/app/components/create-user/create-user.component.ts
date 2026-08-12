@@ -1,69 +1,81 @@
-import { Component, OnInit, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import {Component, inject, signal} from '@angular/core';
+import {FormBuilder, ReactiveFormsModule, Validators} from '@angular/forms';
 
-import { ApiService } from '../../services/api.service';
-import { UserService } from '../../services/user.service';
+import {ApiService} from '../../services/api.service';
+import {UserService} from '../../services/user.service';
+import {NotificationService} from '../../services/notification.service';
+import {UserPayload} from '../../model';
 
 @Component({
   selector: 'app-create-user',
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [ReactiveFormsModule],
   templateUrl: './create-user.component.html',
   styleUrls: ['./create-user.component.css']
 })
-export class CreateUserComponent implements OnInit {
-
-  newUserForm!: FormGroup;
+export class CreateUserComponent {
 
   private readonly fb = inject(FormBuilder);
   private readonly api = inject(ApiService);
+  private readonly notifications = inject(NotificationService);
   readonly userService = inject(UserService);
 
-  ngOnInit(): void {
-    this.newUserForm = this.fb.group({
-      name: ['', [Validators.required]],
-      surname: ['', [Validators.required]],
-      email: ['', [Validators.required, Validators.email]],
-      password: ['', [Validators.required]],
-      permission: this.fb.group({
-        canReadUser: [false],
-        canCreateUser: [false],
-        canUpdateUser: [false],
-        canDeleteUser: [false]
-      })
+  readonly submitting = signal(false);
+
+  readonly form = this.fb.nonNullable.group({
+    name: ['', [Validators.required]],
+    surname: ['', [Validators.required]],
+    email: ['', [Validators.required, Validators.email]],
+    password: ['', [Validators.required]],
+    permission: this.fb.nonNullable.group({
+      canReadUser: [false],
+      canCreateUser: [false],
+      canUpdateUser: [false],
+      canDeleteUser: [false]
     })
+  });
+
+  showError(control: 'name' | 'surname' | 'email' | 'password'): boolean {
+    const field = this.form.controls[control];
+    return field.invalid && (field.dirty || field.touched);
   }
 
-  get form() {
-    return this.newUserForm;
-  }
-
-  handleSubmit() {
-    this.newUserForm.patchValue({
-      permission: {
-        canReadUser: this.form.get('permission.canReadUser')?.value == false ? 0 : 1,
-        canCreateUser: this.form.get('permission.canCreateUser')?.value == false ? 0 : 1,
-        canUpdateUser: this.form.get('permission.canUpdateUser')?.value == false ? 0 : 1,
-        canDeleteUser: this.form.get('permission.canDeleteUser')?.value == false ? 0 : 1,
-      }
-    })
-    if (!this.newUserForm.valid) {
-      alert('Form is invalid');
+  handleSubmit(): void {
+    if (this.form.invalid) {
+      this.form.markAllAsTouched();
+      this.notifications.error('Please correct the highlighted fields.');
       return;
     }
-    this.api.createNewUser(this.newUserForm.value).subscribe({
+
+    this.submitting.set(true);
+    this.api.createNewUser(this.toPayload()).subscribe({
       next: () => {
-        this.newUserForm.reset()
-        alert('User created successfully');
+        this.submitting.set(false);
+        this.form.reset();
+        this.notifications.success('User created.');
       },
-      error: err => {
-        if (err.status == 400) {
-          alert('User with that email already exists')
-        } else {
-          alert('Server error')
-        }
-      }
-    })
+      error: () => this.submitting.set(false)
+    });
   }
 
+  private toPayload(): UserPayload {
+    const {name, surname, email, password, permission} = this.form.getRawValue();
+    return {
+      name,
+      surname,
+      email,
+      password,
+      permission: {
+        canReadUser: permission.canReadUser ? 1 : 0,
+        canCreateUser: permission.canCreateUser ? 1 : 0,
+        canUpdateUser: permission.canUpdateUser ? 1 : 0,
+        canDeleteUser: permission.canDeleteUser ? 1 : 0,
+        canSearchMachine: 0,
+        canStartMachine: 0,
+        canStopMachine: 0,
+        canRestartMachine: 0,
+        canCreateMachine: 0,
+        canDestroyMachine: 0
+      }
+    };
+  }
 }
