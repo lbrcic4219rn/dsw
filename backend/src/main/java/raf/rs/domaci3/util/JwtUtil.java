@@ -1,30 +1,37 @@
 package raf.rs.domaci3.util;
 
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
+import io.jsonwebtoken.io.Decoders;
+import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 import raf.rs.domaci3.model.User;
 import raf.rs.domaci3.services.UserService;
 
+import javax.crypto.SecretKey;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+
 @Component
 public class JwtUtil {
-    private final String SECRET_KEY = "kokakola123";
-    private UserService userService;
+    private final UserService userService;
+    private final SecretKey secretKey;
 
     @Autowired
-    public JwtUtil (UserService userService) {
+    public JwtUtil (UserService userService,
+                    @Value("${app.jwt.secret}") String secret) {
         this.userService = userService;
+        this.secretKey = Keys.hmacShaKeyFor(Decoders.BASE64.decode(secret));
     }
 
     public Claims extractClaims(String token) {
-        return Jwts.parser().setSigningKey(SECRET_KEY).parseClaimsJws(token).getBody();
+        return Jwts.parser().verifyWith(this.secretKey).build().parseSignedClaims(token).getPayload();
     }
 
     public String extractUsername(String token) {
@@ -40,14 +47,18 @@ public class JwtUtil {
         Optional<User> user = userService.findByEmail(username);
         claims.put("permissions", user.get().getPermission());
         return Jwts.builder()
-                .setClaims(claims)
-                .setSubject(username)
-                .setIssuedAt(new Date(System.currentTimeMillis()))
-                .setExpiration(new Date(System.currentTimeMillis() + 10000 * 60 * 60 * 10))
-                .signWith(SignatureAlgorithm.HS512, SECRET_KEY).compact();
+                .claims(claims)
+                .subject(username)
+                .issuedAt(new Date(System.currentTimeMillis()))
+                .expiration(new Date(System.currentTimeMillis() + 10000 * 60 * 60 * 10))
+                .signWith(this.secretKey).compact();
     }
 
     public boolean validateToken(String token, UserDetails user) {
-        return (user.getUsername().equals(extractUsername(token)) && !isTokenExpired(token));
+        try {
+            return (user.getUsername().equals(extractUsername(token)) && !isTokenExpired(token));
+        } catch (JwtException | IllegalArgumentException e) {
+            return false;
+        }
     }
 }

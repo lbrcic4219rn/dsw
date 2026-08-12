@@ -8,7 +8,7 @@ import org.springframework.stereotype.Service;
 import raf.rs.domaci3.model.User;
 import raf.rs.domaci3.repositories.UserRepo;
 
-import javax.persistence.Id;
+import jakarta.persistence.Id;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;

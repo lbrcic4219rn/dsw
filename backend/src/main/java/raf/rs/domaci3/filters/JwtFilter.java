@@ -10,10 +10,12 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import raf.rs.domaci3.services.UserService;
 import raf.rs.domaci3.util.JwtUtil;
 
-import javax.servlet.FilterChain;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import io.jsonwebtoken.JwtException;
+
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
 @Component
@@ -37,7 +39,11 @@ public class JwtFilter extends OncePerRequestFilter {
 
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
             jwt = authHeader.substring(7);
-            email = jwtUtil.extractUsername(jwt);
+            try {
+                email = jwtUtil.extractUsername(jwt);
+            } catch (JwtException | IllegalArgumentException e) {
+                email = null;
+            }
         }
 
         if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {

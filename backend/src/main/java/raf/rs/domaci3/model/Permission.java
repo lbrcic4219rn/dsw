@@ -2,7 +2,7 @@ package raf.rs.domaci3.model;
 
 import lombok.Data;
 
-import javax.persistence.Embeddable;
+import jakarta.persistence.Embeddable;
 
 @Data
 @Embeddable

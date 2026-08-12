@@ -3,7 +3,7 @@ package raf.rs.domaci3.model;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Data;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 
 @Data
 @Entity

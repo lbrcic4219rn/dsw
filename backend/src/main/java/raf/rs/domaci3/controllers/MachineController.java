@@ -15,8 +15,6 @@ import raf.rs.domaci3.services.MachineService;
 import raf.rs.domaci3.services.UserService;
 import raf.rs.domaci3.util.PermissionsUtil;
 
-import javax.print.attribute.standard.Media;
-import javax.swing.text.DateFormatter;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
