@@ -1,0 +1,36 @@
+<div class="container">
+  <h3 *ngIf="!hasPermission;else table">No permission to read users.</h3>
+  <ng-template #table>
+    <table class="table table-hover">
+      <thead>
+      <tr>
+        <th scope="col">Name</th>
+        <th scope="col">Surname</th>
+        <th scope="col">Email</th>
+        <th scope="col">Read users</th>
+        <th scope="col">Create users</th>
+        <th scope="col">Update users</th>
+        <th scope="col">Delete users</th>
+        <th scope="col" *ngIf="canDelete">Delete Action</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr class="table-light" *ngFor="let user of userList">
+        <td>{{ user.name }}</td>
+        <td>{{ user.surname }}</td>
+        <td>
+          <a *ngIf="canUpdate == 1;else noEdit" [routerLink]="['/edit', user.id]">{{ user.email }}</a>
+          <ng-template #noEdit>{{ user.email }}</ng-template>
+        </td>
+        <td><span *ngIf="user.permission.canReadUser == 1">+</span></td>
+        <td><span *ngIf="user.permission.canCreateUser == 1">+</span></td>
+        <td><span *ngIf="user.permission.canUpdateUser == 1">+</span></td>
+        <td><span *ngIf="user.permission.canDeleteUser == 1">+</span></td>
+        <td *ngIf="canDelete">
+          <button class="btn btn-danger" (click)="handleDelete(user.id)">Delete</button>
+        </td>
+      </tr>
+      </tbody>
+    </table>
+  </ng-template>
+</div>
