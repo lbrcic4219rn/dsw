@@ -48,10 +48,8 @@ public class UserService implements IService, UserDetailsService{
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        User myUser = this.findByEmail(username).get();
-        if(myUser == null) {
-            throw new UsernameNotFoundException("User with email: " + username + " not found");
-        }
+        User myUser = this.findByEmail(username)
+                .orElseThrow(() -> new UsernameNotFoundException("User with email: " + username + " not found"));
 
         return new org.springframework.security.core.userdetails.User(myUser.getEmail(), myUser.getPassword(), new ArrayList<>());
     }

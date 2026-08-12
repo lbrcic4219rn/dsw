@@ -18,6 +18,7 @@ public class Machine {
 
     private String name;
 
+    @Enumerated(EnumType.STRING)
     private Status status;
 
     @ManyToOne(fetch = FetchType.LAZY)

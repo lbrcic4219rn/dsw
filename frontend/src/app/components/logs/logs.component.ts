@@ -1,10 +1,12 @@
-import { Component, OnInit } from '@angular/core';
-import {ApiService} from "../../services/api.service";
-import {ErrorMessage} from "../../model";
-import {catchError, tap} from "rxjs";
+import { Component, OnInit, inject } from '@angular/core';
+import { CommonModule } from '@angular/common';
+
+import { ApiService } from '../../services/api.service';
+import { ErrorMessage } from '../../model';
 
 @Component({
   selector: 'app-logs',
+  imports: [CommonModule],
   templateUrl: './logs.component.html',
   styleUrls: ['./logs.component.css']
 })
@@ -12,17 +14,15 @@ export class LogsComponent implements OnInit {
 
   errorLogs: ErrorMessage[] = [];
 
-  constructor(
-    private api: ApiService
-  ) { }
+  private readonly api = inject(ApiService);
 
   ngOnInit(): void {
-    this.api.getErrorLogs().subscribe(
-      (logs: ErrorMessage[]) => {
+    this.api.getErrorLogs().subscribe({
+      next: (logs: ErrorMessage[]) => {
         this.errorLogs = logs
       },
-      error => console.log(error),
-    )
+      error: error => console.log(error)
+    })
   }
 
 }

@@ -1,10 +1,13 @@
-import { Component, OnInit } from '@angular/core';
-import {FormBuilder, FormGroup, Validators} from "@angular/forms";
-import {ApiService} from "../../services/api.service";
-import {UserService} from "../../services/user.service";
+import { Component, OnInit, inject } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+
+import { ApiService } from '../../services/api.service';
+import { UserService } from '../../services/user.service';
 
 @Component({
   selector: 'app-create-user',
+  imports: [CommonModule, ReactiveFormsModule],
   templateUrl: './create-user.component.html',
   styleUrls: ['./create-user.component.css']
 })
@@ -12,12 +15,9 @@ export class CreateUserComponent implements OnInit {
 
   newUserForm!: FormGroup;
 
-  constructor(
-    private fb: FormBuilder,
-    private api: ApiService,
-    public userService: UserService
-  ) { }
-
+  private readonly fb = inject(FormBuilder);
+  private readonly api = inject(ApiService);
+  readonly userService = inject(UserService);
 
   ngOnInit(): void {
     this.newUserForm = this.fb.group({
@@ -51,18 +51,19 @@ export class CreateUserComponent implements OnInit {
       alert('Form is invalid');
       return;
     }
-    this.api.createNewUser(this.newUserForm.value).subscribe(
-      res => {
+    this.api.createNewUser(this.newUserForm.value).subscribe({
+      next: () => {
         this.newUserForm.reset()
         alert('User created successfully');
-      }, err => {
+      },
+      error: err => {
         if (err.status == 400) {
           alert('User with that email already exists')
         } else {
           alert('Server error')
         }
       }
-    )
+    })
   }
 
 }

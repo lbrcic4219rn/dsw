@@ -6,12 +6,12 @@
         <div class="card px-5 py-5">
           <div class="form-data">
             <div class="mb-4 w-100">
-              <span>Email</span>
-              <input type="text" autocomplete="off" class="form-control" [(ngModel)]="email">
+              <label for="login-email">Email</label>
+              <input id="login-email" type="text" autocomplete="off" class="form-control" [(ngModel)]="email">
             </div>
             <div class="mb-4">
-              <span>Password</span>
-              <input type="password" class="form-control" [(ngModel)]="password">
+              <label for="login-password">Password</label>
+              <input id="login-password" type="password" class="form-control" [(ngModel)]="password">
             </div>
             <div class="mb-3">
               <button class="btn btn-dark w-100" (click)="handleLogin()">Login</button>

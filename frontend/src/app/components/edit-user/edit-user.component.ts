@@ -1,12 +1,15 @@
-import { Component, OnInit } from '@angular/core';
-import {UserService} from "../../services/user.service";
-import {ApiService} from "../../services/api.service";
-import {ActivatedRoute, Params, Router} from "@angular/router";
-import {FormBuilder, FormGroup, Validators} from "@angular/forms";
-import {User} from "../../model";
+import { Component, OnInit, inject } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { ActivatedRoute, Params, Router } from '@angular/router';
+import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+
+import { UserService } from '../../services/user.service';
+import { ApiService } from '../../services/api.service';
+import { User } from '../../model';
 
 @Component({
   selector: 'app-edit-user',
+  imports: [CommonModule, ReactiveFormsModule],
   templateUrl: './edit-user.component.html',
   styleUrls: ['./edit-user.component.css']
 })
@@ -17,13 +20,11 @@ export class EditUserComponent implements OnInit {
 
   editUserForm!: FormGroup;
 
-  constructor(
-    public userService: UserService,
-    private api: ApiService,
-    private route: ActivatedRoute,
-    private fb: FormBuilder,
-    private router: Router
-  ) { }
+  readonly userService = inject(UserService);
+  private readonly api = inject(ApiService);
+  private readonly route = inject(ActivatedRoute);
+  private readonly fb = inject(FormBuilder);
+  private readonly router = inject(Router);
 
   ngOnInit(): void {
     this.route.params.subscribe((params: Params) => {
@@ -43,7 +44,6 @@ export class EditUserComponent implements OnInit {
     })
     this.api.getUserById(this.id).subscribe(res => {
       this.user = res as User;
-      console.log(this.user);
 
       this.editUserForm.patchValue({
         name: this.user.name,
@@ -74,14 +74,15 @@ export class EditUserComponent implements OnInit {
       return;
     }
 
-    this.api.editUser(this.user.id, this.editUserForm.value).subscribe(
-      res => {
+    this.api.editUser(this.user.id, this.editUserForm.value).subscribe({
+      next: () => {
         alert('User editted successfully')
         this.router.navigate(['/']);
-      }, err => {
+      },
+      error: () => {
         alert('Something went wrong')
       }
-    )
+    })
   }
 
 }

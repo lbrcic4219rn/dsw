@@ -1,11 +1,14 @@
-import { Component, OnInit } from '@angular/core';
-import {UserService} from "../../services/user.service";
-import {ApiService} from "../../services/api.service";
-import {Machine} from "../../model";
-import {DatePipe} from "@angular/common";
+import { Component, OnInit, inject } from '@angular/core';
+import { CommonModule, DatePipe } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+
+import { UserService } from '../../services/user.service';
+import { ApiService } from '../../services/api.service';
+import { Machine } from '../../model';
 
 @Component({
   selector: 'app-machines',
+  imports: [CommonModule, FormsModule],
   templateUrl: './machines.component.html',
   styleUrls: ['./machines.component.css']
 })
@@ -22,15 +25,20 @@ export class MachinesComponent implements OnInit {
   dateFrom!: string;
   dateTo!: string;
 
-  constructor(
-    private api: ApiService,
-    public userService: UserService
-  ) { }
+  private readonly api = inject(ApiService);
+  readonly userService = inject(UserService);
 
   ngOnInit(): void {
+    this.refreshMachines();
+  }
+
+  private refreshMachines(delayedRefreshMs?: number) {
     this.api.getAllMachines().subscribe(
       (data: Machine[]) => {
         this.machines = data
+        if (delayedRefreshMs) {
+          setTimeout(() => this.refreshMachines(), delayedRefreshMs);
+        }
       }
     )
   }
@@ -39,18 +47,7 @@ export class MachinesComponent implements OnInit {
     this.api.startMachine(id).subscribe(
       () => {
         alert("started machine");
-        this.api.getAllMachines().subscribe(
-          (data: Machine[]) => {
-            this.machines = data
-            setTimeout(() => {
-              this.api.getAllMachines().subscribe(
-                (data: Machine[]) => {
-                  this.machines = data
-                }
-              )
-            }, 15000);
-          }
-        )
+        this.refreshMachines(15000);
       }
     )
   }
@@ -59,18 +56,7 @@ export class MachinesComponent implements OnInit {
     this.api.stopMachine(id).subscribe(
       () => {
         alert("stopped machine");
-        this.api.getAllMachines().subscribe(
-          (data: Machine[]) => {
-            this.machines = data
-            setTimeout(() => {
-              this.api.getAllMachines().subscribe(
-                (data: Machine[]) => {
-                  this.machines = data
-                }
-              )
-            }, 15000);
-          }
-        )
+        this.refreshMachines(15000);
       }
     )
   }
@@ -79,18 +65,7 @@ export class MachinesComponent implements OnInit {
     this.api.restartMachine(id).subscribe(
       () => {
         alert("stopped machine");
-        this.api.getAllMachines().subscribe(
-          (data: Machine[]) => {
-            this.machines = data
-            setTimeout(() => {
-              this.api.getAllMachines().subscribe(
-                (data: Machine[]) => {
-                  this.machines = data
-                }
-              )
-            }, 30000);
-          }
-        )
+        this.refreshMachines(30000);
       }
     )
   }
@@ -138,11 +113,7 @@ export class MachinesComponent implements OnInit {
     this.api.destroyMachine(id).subscribe(
       () => {
         alert('Machine destroyed');
-        this.api.getAllMachines().subscribe(
-          (data: Machine[]) => {
-            this.machines = data
-          }
-        )
+        this.refreshMachines();
       }
     )
   }
